@@ -1,3 +1,4 @@
+
 package com.srmcem.payroll.entity;
 
 import jakarta.persistence.*;
@@ -9,7 +10,8 @@ import lombok.NoArgsConstructor;
 /**
  * Represents the single administrator account for this payroll system.
  *
- * <p>Only one row is expected to exist in the {@code admins} table.
+ * <p>
+ * Only one row is expected to exist in the {@code admins} table.
  * The password field stores a BCrypt-encoded hash — never plain text.
  */
 @Data
