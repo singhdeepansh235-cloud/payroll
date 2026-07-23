@@ -4,9 +4,13 @@ import com.srmcem.payroll.dto.PayrollGenerateRequest;
 import com.srmcem.payroll.dto.PayrollResponse;
 import com.srmcem.payroll.response.ApiResponse;
 import com.srmcem.payroll.service.PayrollService;
+import com.srmcem.payroll.service.PayslipService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,7 +42,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PayrollController {
 
-    private final PayrollService payrollService;
+    private final PayrollService  payrollService;
+    private final PayslipService  payslipService;
 
     // -----------------------------------------------------------------------
     // POST /api/payroll — Generate Payroll
@@ -114,5 +119,33 @@ public class PayrollController {
         List<PayrollResponse> records = payrollService.getAllPayrollRecords();
         return ResponseEntity.ok(
                 ApiResponse.success("All payroll records fetched successfully.", records));
+    }
+
+    // -----------------------------------------------------------------------
+    // GET /api/payroll/{id}/payslip — Download PDF Payslip
+    // -----------------------------------------------------------------------
+
+    /**
+     * Generates and downloads a PDF payslip for the specified payroll record.
+     *
+     * <p>Returns {@code Content-Type: application/pdf} with a
+     * {@code Content-Disposition: attachment} header so the browser
+     * triggers a file-save dialog.
+     *
+     * @param id the {@code payrollId} of the target {@link com.srmcem.payroll.entity.PayrollRecord}
+     */
+    @GetMapping(value = "/{id}/payslip", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> downloadPayslip(@PathVariable Long id) {
+        byte[] pdfBytes = payslipService.generatePayslip(id);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.attachment()
+                        .filename("payslip-" + id + ".pdf")
+                        .build());
+        headers.setContentLength(pdfBytes.length);
+
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 }
