@@ -28,6 +28,7 @@ public class LeaveServiceImpl implements LeaveService {
 
     private final LeaveRequestRepository leaveRequestRepository;
     private final EmployeeRepository     employeeRepository;
+    private final com.srmcem.payroll.mail.MailService mailService;
 
     // -----------------------------------------------------------------------
     // Apply Leave
@@ -101,6 +102,14 @@ public class LeaveServiceImpl implements LeaveService {
         LeaveRequest updated = leaveRequestRepository.save(leaveRequest);
         log.info("Leave {} : id={}, employeeId={}",
                 updated.getStatus(), leaveId, updated.getEmployee().getEmployeeId());
+                
+        // Send email notification asynchronously
+        if (updated.getStatus() == LeaveStatus.APPROVED) {
+            mailService.sendLeaveApprovedEmail(updated);
+        } else if (updated.getStatus() == LeaveStatus.REJECTED) {
+            mailService.sendLeaveRejectedEmail(updated);
+        }
+        
         return toResponse(updated);
     }
 

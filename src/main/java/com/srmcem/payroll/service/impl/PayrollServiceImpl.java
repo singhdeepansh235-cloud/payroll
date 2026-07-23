@@ -27,6 +27,8 @@ public class PayrollServiceImpl implements PayrollService {
 
     private final PayrollRecordRepository payrollRecordRepository;
     private final EmployeeRepository      employeeRepository;
+    private final com.srmcem.payroll.mail.MailService mailService;
+    private final com.srmcem.payroll.service.PayslipService payslipService;
 
     // -----------------------------------------------------------------------
     // Generate Payroll
@@ -81,6 +83,11 @@ public class PayrollServiceImpl implements PayrollService {
         PayrollRecord saved = payrollRecordRepository.save(record);
         log.info("Payroll generated: id={}, employeeId={}, month={}, net={}",
                 saved.getPayrollId(), employee.getEmployeeId(), monthStored, netSalary);
+                
+        // Generate PDF and send email asynchronously
+        byte[] pdfBytes = payslipService.generatePayslip(saved.getPayrollId());
+        mailService.sendPayrollAndPayslipEmail(saved, pdfBytes);
+        
         return toResponse(saved);
     }
 
