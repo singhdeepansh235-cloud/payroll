@@ -132,4 +132,18 @@ public class LeaveController {
         return ResponseEntity.ok(
                 ApiResponse.success("Pending leave requests fetched successfully.", records));
     }
+
+    @GetMapping("/paginated")
+    public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<LeaveResponse>>> getLeavesPaginated(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "appliedOn") String sort,
+            @RequestParam(defaultValue = "DESC") String direction) {
+            
+        org.springframework.data.domain.Sort.Direction dir = org.springframework.data.domain.Sort.Direction.fromString(direction);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(dir, sort));
+        org.springframework.data.domain.Page<LeaveResponse> results = leaveService.getLeavesPaginated(search, pageable);
+        return ResponseEntity.ok(ApiResponse.success("Paginated leave requests fetched successfully.", results));
+    }
 }

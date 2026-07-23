@@ -39,6 +39,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/attendance")
 @RequiredArgsConstructor
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Attendance Module", description = "Endpoints for employee attendance tracking")
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
@@ -48,6 +49,12 @@ public class AttendanceController {
     // -----------------------------------------------------------------------
 
     @PostMapping
+    @io.swagger.v3.oas.annotations.Operation(summary = "Mark Attendance", description = "Marks attendance for an employee on a given date. Throws BadRequestException if already marked.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Attendance marked successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Attendance already marked or validation errors"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Employee not found")
+    })
     public ResponseEntity<ApiResponse<AttendanceResponse>> markAttendance(
             @Valid @RequestBody AttendanceRequest request) {
 
@@ -62,6 +69,12 @@ public class AttendanceController {
     // -----------------------------------------------------------------------
 
     @PutMapping("/{id}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Update Attendance", description = "Updates an existing attendance record.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Attendance updated successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid constraints"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Attendance record or employee not found")
+    })
     public ResponseEntity<ApiResponse<AttendanceResponse>> updateAttendance(
             @PathVariable Long id,
             @Valid @RequestBody AttendanceRequest request) {
@@ -76,6 +89,11 @@ public class AttendanceController {
     // -----------------------------------------------------------------------
 
     @GetMapping("/{id}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Attendance by ID", description = "Fetches a single attendance record by ID.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Attendance record fetched successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Attendance record not found")
+    })
     public ResponseEntity<ApiResponse<AttendanceResponse>> getAttendanceById(
             @PathVariable Long id) {
 
@@ -89,6 +107,11 @@ public class AttendanceController {
     // -----------------------------------------------------------------------
 
     @GetMapping("/employee/{employeeId}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Attendance History by Employee", description = "Returns full history of attendance records for the employee.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Attendance history fetched successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Employee not found")
+    })
     public ResponseEntity<ApiResponse<List<AttendanceResponse>>> getAttendanceByEmployee(
             @PathVariable Long employeeId) {
 
@@ -108,6 +131,8 @@ public class AttendanceController {
      * @param date optional ISO date string {@code "yyyy-MM-dd"}
      */
     @GetMapping("/date")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Attendance for Date", description = "Returns all employee attendance records for a specific date (YYYY-MM-DD). Defaults to today.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Attendance for date fetched successfully")
     public ResponseEntity<ApiResponse<List<AttendanceResponse>>> getAttendanceByDate(
             @RequestParam(required = false) String date) {
 
@@ -127,6 +152,11 @@ public class AttendanceController {
      * @param period     month in {@code "MMMM-yyyy"} format, e.g. {@code "July-2026"}
      */
     @GetMapping("/monthly/{employeeId}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Monthly Attendance Summary", description = "Generates a monthly attendance status breakdown and details for an employee.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Monthly summary generated successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Employee not found")
+    })
     public ResponseEntity<ApiResponse<MonthlyAttendanceResponse>> getMonthlyAttendance(
             @PathVariable Long employeeId,
             @RequestParam String period) {
@@ -135,5 +165,21 @@ public class AttendanceController {
                 attendanceService.getMonthlyAttendance(employeeId, period);
         return ResponseEntity.ok(
                 ApiResponse.success("Monthly attendance report generated.", report));
+    }
+
+    @GetMapping("/paginated")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Paginated Search for Attendance", description = "Search attendance records with pagination and sorting.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Paginated attendance records fetched successfully")
+    public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<AttendanceResponse>>> getAttendancePaginated(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "date") String sort,
+            @RequestParam(defaultValue = "DESC") String direction) {
+            
+        org.springframework.data.domain.Sort.Direction dir = org.springframework.data.domain.Sort.Direction.fromString(direction);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(dir, sort));
+        org.springframework.data.domain.Page<AttendanceResponse> results = attendanceService.getAttendancePaginated(search, pageable);
+        return ResponseEntity.ok(ApiResponse.success("Paginated attendance records fetched successfully.", results));
     }
 }

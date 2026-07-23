@@ -43,4 +43,6 @@ public interface LeaveService {
 
     /** Returns all leave requests with PENDING status (admin action queue). */
     List<LeaveResponse> getPendingLeaveRequests();
+
+    org.springframework.data.domain.Page<LeaveResponse> getLeavesPaginated(String search, org.springframework.data.domain.Pageable pageable);
 }

@@ -44,4 +44,13 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
 
     /** All leave requests for all employees, newest first. */
     List<LeaveRequest> findAllByOrderByAppliedOnDesc();
+
+    @Query("""
+            SELECT lr FROM LeaveRequest lr
+            WHERE :search IS NULL OR :search = ''
+               OR LOWER(lr.employee.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(lr.employee.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(lr.employee.email) LIKE LOWER(CONCAT('%', :search, '%'))
+            """)
+    org.springframework.data.domain.Page<LeaveRequest> searchPaginated(@Param("search") String search, org.springframework.data.domain.Pageable pageable);
 }

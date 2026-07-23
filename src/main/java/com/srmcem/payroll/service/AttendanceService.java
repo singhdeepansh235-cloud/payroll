@@ -48,4 +48,6 @@ public interface AttendanceService {
      * @param yearMonth  period in {@code "MMMM-yyyy"} format (e.g. "July-2026")
      */
     MonthlyAttendanceResponse getMonthlyAttendance(Long employeeId, String yearMonth);
+
+    org.springframework.data.domain.Page<AttendanceResponse> getAttendancePaginated(String search, org.springframework.data.domain.Pageable pageable);
 }

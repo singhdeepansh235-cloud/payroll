@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public class DepartmentServiceImpl implements DepartmentService {
 
     private final DepartmentRepository departmentRepository;
+    private final com.srmcem.payroll.service.AuditLogService auditLogService;
 
     // -----------------------------------------------------------------------
     // Add
@@ -41,6 +42,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         Department saved = departmentRepository.save(department);
         log.info("Department created: id={}, name='{}'", saved.getDepartmentId(), saved.getDepartmentName());
+        auditLogService.log("Created Department: ID=" + saved.getDepartmentId() + ", Name=" + saved.getDepartmentName(), "Department");
         return toResponse(saved);
     }
 
@@ -65,6 +67,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         Department updated = departmentRepository.save(department);
         log.info("Department updated: id={}, name='{}'", updated.getDepartmentId(), updated.getDepartmentName());
+        auditLogService.log("Updated Department: ID=" + updated.getDepartmentId() + ", Name=" + updated.getDepartmentName(), "Department");
         return toResponse(updated);
     }
 
@@ -78,6 +81,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         Department department = findOrThrow(departmentId);
         departmentRepository.delete(department);
         log.info("Department deleted: id={}, name='{}'", departmentId, department.getDepartmentName());
+        auditLogService.log("Deleted Department: ID=" + departmentId + ", Name=" + department.getDepartmentName(), "Department");
     }
 
     // -----------------------------------------------------------------------
@@ -111,6 +115,13 @@ public class DepartmentServiceImpl implements DepartmentService {
         return departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Department", "departmentId", departmentId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<DepartmentResponse> getDepartmentsPaginated(String search, org.springframework.data.domain.Pageable pageable) {
+        return departmentRepository.searchPaginated(search, pageable)
+                .map(this::toResponse);
     }
 
     private DepartmentResponse toResponse(Department department) {

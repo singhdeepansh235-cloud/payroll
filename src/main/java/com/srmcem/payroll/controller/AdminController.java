@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Authentication Module", description = "Endpoints for Admin authentication and password management")
 public class AdminController {
 
     private final AdminService adminService;
@@ -44,6 +45,11 @@ public class AdminController {
      * {@link ApiResponse} envelope instead of Spring's default JSON.
      */
     @PostMapping("/login")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Admin Login", description = "Validates session credentials and returns the Admin profile.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid credentials")
+    })
     public ResponseEntity<ApiResponse<AdminResponse>> login(
             @Valid @RequestBody LoginRequest request) {
 
@@ -65,6 +71,12 @@ public class AdminController {
      * variable needed.
      */
     @PostMapping("/change-password")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Change Password", description = "Changes the password for the currently authenticated Admin session.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password changed successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid inputs or passwords mismatch"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - must be logged in")
+    })
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) {

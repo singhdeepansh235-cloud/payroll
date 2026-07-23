@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 public class ReportController {
 
     private final ReportService reportService;
+    private final com.srmcem.payroll.service.AuditLogService auditLogService;
 
     // -----------------------------------------------------------------------
     // GET /api/reports/employees/*
@@ -86,6 +87,7 @@ public class ReportController {
         String timestamp = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String filename = namePrefix + "_report_" + timestamp + "." + extension;
 
+        auditLogService.log("Downloaded report: Name=" + namePrefix + ", Format=" + extension, "Reports");
         return ResponseEntity.ok()
                 .headers(ReportUtil.createAttachmentHeaders(filename))
                 .contentType(ReportUtil.getMediaTypeForFormat(extension))

@@ -29,6 +29,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository    employeeRepository;
     private final DepartmentRepository  departmentRepository;
     private final DesignationRepository designationRepository;
+    private final com.srmcem.payroll.service.AuditLogService auditLogService;
 
     // -----------------------------------------------------------------------
     // Add
@@ -63,6 +64,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee saved = employeeRepository.save(employee);
         log.info("Employee created: id={}, name='{} {}'",
                 saved.getEmployeeId(), saved.getFirstName(), saved.getLastName());
+        auditLogService.log("Created Employee: ID=" + saved.getEmployeeId() + ", Name=" + saved.getFirstName() + " " + saved.getLastName(), "Employee");
         return toResponse(saved);
     }
 
@@ -103,6 +105,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee updated = employeeRepository.save(employee);
         log.info("Employee updated: id={}, name='{} {}'",
                 updated.getEmployeeId(), updated.getFirstName(), updated.getLastName());
+        auditLogService.log("Updated Employee: ID=" + updated.getEmployeeId() + ", Name=" + updated.getFirstName() + " " + updated.getLastName(), "Employee");
         return toResponse(updated);
     }
 
@@ -117,6 +120,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employeeRepository.delete(employee);
         log.info("Employee deleted: id={}, name='{} {}'",
                 employeeId, employee.getFirstName(), employee.getLastName());
+        auditLogService.log("Deleted Employee: ID=" + employeeId + ", Name=" + employee.getFirstName() + " " + employee.getLastName(), "Employee");
     }
 
     // -----------------------------------------------------------------------
@@ -176,6 +180,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     private Designation findDesignationOrThrow(Long id) {
         return designationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Designation", "designationId", id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<EmployeeResponse> searchEmployeesPaginated(String search, org.springframework.data.domain.Pageable pageable) {
+        return employeeRepository.searchPaginated(search, pageable)
+                .map(this::toResponse);
     }
 
     // -----------------------------------------------------------------------

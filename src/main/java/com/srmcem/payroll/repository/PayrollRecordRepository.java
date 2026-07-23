@@ -41,4 +41,14 @@ public interface PayrollRecordRepository extends JpaRepository<PayrollRecord, Lo
      */
     @Query("SELECT COALESCE(SUM(p.netSalary), 0) FROM PayrollRecord p WHERE p.payrollMonth = :month")
     BigDecimal sumNetSalaryByMonth(@Param("month") String month);
+
+    @Query("""
+            SELECT p FROM PayrollRecord p
+            WHERE :search IS NULL OR :search = ''
+               OR LOWER(p.employee.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(p.employee.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(p.employee.email) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(p.payrollMonth) LIKE LOWER(CONCAT('%', :search, '%'))
+            """)
+    org.springframework.data.domain.Page<PayrollRecord> searchPaginated(@Param("search") String search, org.springframework.data.domain.Pageable pageable);
 }

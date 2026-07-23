@@ -29,6 +29,7 @@ public class LeaveServiceImpl implements LeaveService {
     private final LeaveRequestRepository leaveRequestRepository;
     private final EmployeeRepository     employeeRepository;
     private final com.srmcem.payroll.mail.MailService mailService;
+    private final com.srmcem.payroll.service.AuditLogService auditLogService;
 
     // -----------------------------------------------------------------------
     // Apply Leave
@@ -106,8 +107,10 @@ public class LeaveServiceImpl implements LeaveService {
         // Send email notification asynchronously
         if (updated.getStatus() == LeaveStatus.APPROVED) {
             mailService.sendLeaveApprovedEmail(updated);
+            auditLogService.log("Approved Leave: ID=" + updated.getLeaveId() + ", Employee ID=" + updated.getEmployee().getEmployeeId(), "Leave");
         } else if (updated.getStatus() == LeaveStatus.REJECTED) {
             mailService.sendLeaveRejectedEmail(updated);
+            auditLogService.log("Rejected Leave: ID=" + updated.getLeaveId() + ", Employee ID=" + updated.getEmployee().getEmployeeId(), "Leave");
         }
         
         return toResponse(updated);
@@ -180,6 +183,13 @@ public class LeaveServiceImpl implements LeaveService {
         return employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Employee", "employeeId", id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<LeaveResponse> getLeavesPaginated(String search, org.springframework.data.domain.Pageable pageable) {
+        return leaveRequestRepository.searchPaginated(search, pageable)
+                .map(this::toResponse);
     }
 
     // -----------------------------------------------------------------------

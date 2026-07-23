@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 public class PayrollGenerateRequest {
 
     @NotNull(message = "Employee ID is required")
+    @io.swagger.v3.oas.annotations.media.Schema(example = "1", description = "ID of the employee")
     private Long employeeId;
 
     /**
@@ -31,6 +32,7 @@ public class PayrollGenerateRequest {
      * Converted to {@code "YYYY-MM"} for storage.
      */
     @NotBlank(message = "Payroll month is required (e.g. July-2026)")
+    @io.swagger.v3.oas.annotations.media.Schema(example = "July-2026", description = "Payroll period in 'MMMM-yyyy' format")
     private String payrollMonth;
 
     /**
@@ -39,17 +41,21 @@ public class PayrollGenerateRequest {
      */
     @DecimalMin(value = "0.01", message = "Basic salary must be greater than zero")
     @Digits(integer = 10, fraction = 2, message = "Basic salary must have at most 10 integer digits and 2 decimal places")
+    @io.swagger.v3.oas.annotations.media.Schema(example = "75000.00", description = "Optional basic salary override. Falls back to employee's base salary if omitted.")
     private BigDecimal basicSalary;
 
     @DecimalMin(value = "0.00", inclusive = true, message = "Bonus cannot be negative")
     @Digits(integer = 10, fraction = 2)
+    @io.swagger.v3.oas.annotations.media.Schema(example = "5000.00", description = "Bonus earnings")
     private BigDecimal bonus;
 
     @DecimalMin(value = "0.00", inclusive = true, message = "Overtime cannot be negative")
     @Digits(integer = 10, fraction = 2)
+    @io.swagger.v3.oas.annotations.media.Schema(example = "1500.00", description = "Overtime earnings")
     private BigDecimal overtime;
 
     @DecimalMin(value = "0.00", inclusive = true, message = "Deductions cannot be negative")
     @Digits(integer = 10, fraction = 2)
+    @io.swagger.v3.oas.annotations.media.Schema(example = "2000.00", description = "Deductions (tax, PF, unpaid leaves)")
     private BigDecimal deductions;
 }

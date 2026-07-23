@@ -15,8 +15,10 @@ import lombok.Data;
 public class LeaveStatusUpdateRequest {
 
     @NotNull(message = "Status is required (APPROVED or REJECTED)")
+    @io.swagger.v3.oas.annotations.media.Schema(example = "APPROVED", description = "Target status of the leave request (APPROVED, REJECTED)")
     private LeaveStatus status;
 
     @Size(max = 500, message = "Remarks must not exceed 500 characters")
+    @io.swagger.v3.oas.annotations.media.Schema(example = "Approved. Ensure work handoff is completed.", description = "Approval or rejection notes from administrator")
     private String adminRemarks;
 }

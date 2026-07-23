@@ -21,4 +21,6 @@ public interface DepartmentService {
 
     /** Returns all departments ordered by name. */
     List<DepartmentResponse> getAllDepartments();
+
+    org.springframework.data.domain.Page<DepartmentResponse> getDepartmentsPaginated(String search, org.springframework.data.domain.Pageable pageable);
 }

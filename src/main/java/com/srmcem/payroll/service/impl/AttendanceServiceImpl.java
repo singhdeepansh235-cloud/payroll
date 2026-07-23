@@ -238,6 +238,13 @@ public class AttendanceServiceImpl implements AttendanceService {
     // Mapper
     // -----------------------------------------------------------------------
 
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<AttendanceResponse> getAttendancePaginated(String search, org.springframework.data.domain.Pageable pageable) {
+        return attendanceRepository.searchPaginated(search, pageable)
+                .map(this::toResponse);
+    }
+
     private AttendanceResponse toResponse(Attendance a) {
         return AttendanceResponse.builder()
                 .attendanceId(a.getAttendanceId())

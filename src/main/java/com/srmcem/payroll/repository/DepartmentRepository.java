@@ -24,4 +24,12 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
 
     /** Case-insensitive search by name fragment — useful for future search features. */
     List<Department> findByDepartmentNameContainingIgnoreCase(String keyword);
+
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT d FROM Department d
+            WHERE :search IS NULL OR :search = ''
+               OR LOWER(d.departmentName) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(d.description) LIKE LOWER(CONCAT('%', :search, '%'))
+            """)
+    org.springframework.data.domain.Page<Department> searchPaginated(@org.springframework.data.repository.query.Param("search") String search, org.springframework.data.domain.Pageable pageable);
 }

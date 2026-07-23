@@ -21,6 +21,7 @@ public class AdminServiceImpl implements AdminService {
 
     private final AdminRepository adminRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.srmcem.payroll.service.AuditLogService auditLogService;
 
     // -----------------------------------------------------------------------
     // Login
@@ -36,6 +37,7 @@ public class AdminServiceImpl implements AdminService {
         }
 
         log.info("Admin '{}' logged in successfully.", admin.getUsername());
+        auditLogService.log(admin.getUsername(), "Admin Login", "Auth");
         return toResponse(admin);
     }
 

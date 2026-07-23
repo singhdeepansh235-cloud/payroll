@@ -47,4 +47,14 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
                OR LOWER(e.phone)      LIKE LOWER(:kw)
             """)
     List<Employee> search(@Param("kw") String keyword);
+
+    @Query("""
+            SELECT e FROM Employee e
+            WHERE :search IS NULL OR :search = ''
+               OR LOWER(e.firstName)  LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(e.lastName)   LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(e.email)      LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(e.phone)      LIKE LOWER(CONCAT('%', :search, '%'))
+            """)
+    org.springframework.data.domain.Page<Employee> searchPaginated(@Param("search") String search, org.springframework.data.domain.Pageable pageable);
 }

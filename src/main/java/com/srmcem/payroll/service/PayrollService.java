@@ -44,4 +44,6 @@ public interface PayrollService {
 
     /** Returns all payroll records across all employees, newest month first. */
     List<PayrollResponse> getAllPayrollRecords();
+
+    org.springframework.data.domain.Page<PayrollResponse> getPayrollPaginated(String search, org.springframework.data.domain.Pageable pageable);
 }

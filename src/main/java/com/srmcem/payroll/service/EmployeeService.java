@@ -32,4 +32,6 @@ public interface EmployeeService {
      * @param keyword the search term (partial match supported)
      */
     List<EmployeeResponse> searchEmployees(String keyword);
+
+    org.springframework.data.domain.Page<EmployeeResponse> searchEmployeesPaginated(String search, org.springframework.data.domain.Pageable pageable);
 }

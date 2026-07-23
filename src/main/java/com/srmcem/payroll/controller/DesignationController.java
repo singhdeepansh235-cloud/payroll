@@ -31,6 +31,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/designations")
 @RequiredArgsConstructor
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Designation Module", description = "Endpoints for designation management")
 public class DesignationController {
 
     private final DesignationService designationService;
@@ -40,6 +41,11 @@ public class DesignationController {
     // -----------------------------------------------------------------------
 
     @PostMapping
+    @io.swagger.v3.oas.annotations.Operation(summary = "Add Designation", description = "Creates a new designation. Throws BadRequestException if name already exists.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Designation added successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Duplicate designation name or validation errors")
+    })
     public ResponseEntity<ApiResponse<DesignationResponse>> addDesignation(
             @Valid @RequestBody DesignationRequest request) {
 
@@ -54,6 +60,12 @@ public class DesignationController {
     // -----------------------------------------------------------------------
 
     @PutMapping("/{id}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Update Designation", description = "Updates fields of an existing designation. Name must remain unique.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Designation updated successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Designation name is already in use"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Designation not found")
+    })
     public ResponseEntity<ApiResponse<DesignationResponse>> updateDesignation(
             @PathVariable Long id,
             @Valid @RequestBody DesignationRequest request) {
@@ -68,6 +80,11 @@ public class DesignationController {
     // -----------------------------------------------------------------------
 
     @DeleteMapping("/{id}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Delete Designation", description = "Deletes a designation from the system.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Designation deleted successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Designation not found")
+    })
     public ResponseEntity<ApiResponse<Void>> deleteDesignation(@PathVariable Long id) {
         designationService.deleteDesignation(id);
         return ResponseEntity.ok(
@@ -79,6 +96,11 @@ public class DesignationController {
     // -----------------------------------------------------------------------
 
     @GetMapping("/{id}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Designation by ID", description = "Fetches details of a single designation.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Designation fetched successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Designation not found")
+    })
     public ResponseEntity<ApiResponse<DesignationResponse>> getDesignationById(
             @PathVariable Long id) {
 
@@ -92,6 +114,8 @@ public class DesignationController {
     // -----------------------------------------------------------------------
 
     @GetMapping
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get All Designations", description = "Lists all designations registered in the system.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Designations fetched successfully")
     public ResponseEntity<ApiResponse<List<DesignationResponse>>> getAllDesignations() {
         List<DesignationResponse> designations = designationService.getAllDesignations();
         return ResponseEntity.ok(

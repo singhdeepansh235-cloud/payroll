@@ -29,6 +29,7 @@ public class PayrollServiceImpl implements PayrollService {
     private final EmployeeRepository      employeeRepository;
     private final com.srmcem.payroll.mail.MailService mailService;
     private final com.srmcem.payroll.service.PayslipService payslipService;
+    private final com.srmcem.payroll.service.AuditLogService auditLogService;
 
     // -----------------------------------------------------------------------
     // Generate Payroll
@@ -88,6 +89,7 @@ public class PayrollServiceImpl implements PayrollService {
         byte[] pdfBytes = payslipService.generatePayslip(saved.getPayrollId());
         mailService.sendPayrollAndPayslipEmail(saved, pdfBytes);
         
+        auditLogService.log("Generated Payroll: ID=" + saved.getPayrollId() + ", Month=" + monthStored + ", Employee ID=" + employee.getEmployeeId(), "Payroll");
         return toResponse(saved);
     }
 
@@ -167,6 +169,13 @@ public class PayrollServiceImpl implements PayrollService {
     // -----------------------------------------------------------------------
     // Mapper
     // -----------------------------------------------------------------------
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<PayrollResponse> getPayrollPaginated(String search, org.springframework.data.domain.Pageable pageable) {
+        return payrollRecordRepository.searchPaginated(search, pageable)
+                .map(this::toResponse);
+    }
 
     private PayrollResponse toResponse(PayrollRecord pr) {
         // Convert stored "YYYY-MM" back to human-readable "MMMM-yyyy"

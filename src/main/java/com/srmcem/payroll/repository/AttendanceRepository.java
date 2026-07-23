@@ -52,4 +52,13 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     /** All records for a given employee with a specific status. */
     List<Attendance> findByEmployee_EmployeeIdAndAttendanceStatus(
             Long employeeId, AttendanceStatus status);
+
+    @Query("""
+            SELECT a FROM Attendance a
+            WHERE :search IS NULL OR :search = ''
+               OR LOWER(a.employee.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(a.employee.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
+               OR LOWER(a.employee.email) LIKE LOWER(CONCAT('%', :search, '%'))
+            """)
+    org.springframework.data.domain.Page<Attendance> searchPaginated(@Param("search") String search, org.springframework.data.domain.Pageable pageable);
 }
