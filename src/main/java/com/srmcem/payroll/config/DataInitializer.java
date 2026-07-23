@@ -1,7 +1,9 @@
 package com.srmcem.payroll.config;
 
 import com.srmcem.payroll.entity.Admin;
+import com.srmcem.payroll.entity.CompanySettings;
 import com.srmcem.payroll.repository.AdminRepository;
+import com.srmcem.payroll.repository.CompanySettingsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -27,6 +29,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class DataInitializer {
 
     private final AdminRepository adminRepository;
+    private final CompanySettingsRepository settingsRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Bean
@@ -45,6 +48,16 @@ public class DataInitializer {
                 log.warn("Please change the default password immediately after first login!");
             } else {
                 log.info("Admin account already exists — skipping seed.");
+            }
+
+            if (settingsRepository.count() == 0) {
+                CompanySettings defaultSettings = CompanySettings.builder()
+                        .companyName("SRMCEM Payroll System")
+                        .email("hr@srmcem.com")
+                        .phone("+91-0000000000")
+                        .build();
+                settingsRepository.save(defaultSettings);
+                log.info("Default Company Settings seeded.");
             }
         };
     }

@@ -27,16 +27,18 @@ public class ReportServiceImpl implements ReportService {
     private final LeaveService leaveService;
     private final PayrollService payrollService;
     private final DepartmentService departmentService;
+    private final com.srmcem.payroll.service.CompanySettingsService settingsService;
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
     @Override
     public byte[] generateEmployeeReport(String format) {
+        String companyName = getCompanyName();
         List<EmployeeResponse> employees = employeeService.getAllEmployees();
         return switch (format.toLowerCase()) {
-            case "pdf" -> PdfReportExporter.exportEmployees(employees);
-            case "excel", "xlsx" -> ExcelReportExporter.exportEmployees(employees);
-            case "csv" -> CsvReportExporter.exportEmployees(employees);
+            case "pdf" -> PdfReportExporter.exportEmployees(employees, companyName);
+            case "excel", "xlsx" -> ExcelReportExporter.exportEmployees(employees, companyName);
+            case "csv" -> CsvReportExporter.exportEmployees(employees); // CSV doesn't use title
             default -> throw new IllegalArgumentException("Unsupported format: " + format);
         };
     }
@@ -56,7 +58,7 @@ public class ReportServiceImpl implements ReportService {
                 .build()).collect(Collectors.toList());
 
         if ("pdf".equalsIgnoreCase(format)) {
-            return PdfReportExporter.exportAttendance(responses);
+            return PdfReportExporter.exportAttendance(responses, getCompanyName());
         }
         throw new IllegalArgumentException("Unsupported format for Attendance report: " + format);
     }
@@ -65,7 +67,7 @@ public class ReportServiceImpl implements ReportService {
     public byte[] generateLeaveReport(String format) {
         List<LeaveResponse> leaves = leaveService.getAllLeaveRequests();
         if ("pdf".equalsIgnoreCase(format)) {
-            return PdfReportExporter.exportLeaves(leaves);
+            return PdfReportExporter.exportLeaves(leaves, getCompanyName());
         }
         throw new IllegalArgumentException("Unsupported format for Leave report: " + format);
     }
@@ -74,7 +76,7 @@ public class ReportServiceImpl implements ReportService {
     public byte[] generatePayrollReport(String format) {
         List<PayrollResponse> records = payrollService.getAllPayrollRecords();
         if ("pdf".equalsIgnoreCase(format)) {
-            return PdfReportExporter.exportPayroll(records);
+            return PdfReportExporter.exportPayroll(records, getCompanyName());
         }
         throw new IllegalArgumentException("Unsupported format for Payroll report: " + format);
     }
@@ -83,8 +85,13 @@ public class ReportServiceImpl implements ReportService {
     public byte[] generateDepartmentReport(String format) {
         List<DepartmentResponse> departments = departmentService.getAllDepartments();
         if ("pdf".equalsIgnoreCase(format)) {
-            return PdfReportExporter.exportDepartments(departments);
+            return PdfReportExporter.exportDepartments(departments, getCompanyName());
         }
         throw new IllegalArgumentException("Unsupported format for Department report: " + format);
+    }
+
+    private String getCompanyName() {
+        String companyName = settingsService.getSettings().getCompanyName();
+        return (companyName == null || companyName.isEmpty()) ? "SRMCEM" : companyName;
     }
 }

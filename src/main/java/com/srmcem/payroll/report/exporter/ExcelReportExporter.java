@@ -10,12 +10,23 @@ import java.util.List;
 
 public class ExcelReportExporter {
 
-    public static byte[] exportEmployees(List<EmployeeResponse> employees) {
+    public static byte[] exportEmployees(List<EmployeeResponse> employees, String companyName) {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Employees");
 
+            // Title Row
+            Row titleRow = sheet.createRow(0);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue(companyName + " - Employee Report");
+            CellStyle titleStyle = workbook.createCellStyle();
+            Font titleFont = workbook.createFont();
+            titleFont.setBold(true);
+            titleFont.setFontHeightInPoints((short) 14);
+            titleStyle.setFont(titleFont);
+            titleCell.setCellStyle(titleStyle);
+
             // Header Row
-            Row headerRow = sheet.createRow(0);
+            Row headerRow = sheet.createRow(2);
             String[] headers = {"Employee ID", "First Name", "Last Name", "Email", "Phone", "Department", "Designation", "Status"};
             
             CellStyle headerStyle = workbook.createCellStyle();
@@ -30,7 +41,7 @@ public class ExcelReportExporter {
             }
 
             // Data Rows
-            int rowIdx = 1;
+            int rowIdx = 3;
             for (EmployeeResponse emp : employees) {
                 Row row = sheet.createRow(rowIdx++);
                 row.createCell(0).setCellValue(emp.getEmployeeId());

@@ -39,6 +39,7 @@ import java.time.YearMonth;
 public class PayslipServiceImpl implements PayslipService {
 
     private final PayrollRecordRepository payrollRecordRepository;
+    private final com.srmcem.payroll.service.CompanySettingsService settingsService;
 
     // ── Palette ──────────────────────────────────────────────────────────────
     private static final Color HEADER_BG      = new Color(31, 57, 98);   // deep navy
@@ -99,8 +100,16 @@ public class PayslipServiceImpl implements PayslipService {
         YearMonth  period      = YearMonth.parse(pr.getPayrollMonth());
         String     displayMonth = DateUtil.format(period);
 
+        // Fetch dynamic company settings
+        String companyName = settingsService.getSettings().getCompanyName();
+        if (companyName == null || companyName.isEmpty()) {
+            companyName = "SRMCEM PAYROLL";
+        } else {
+            companyName = companyName.toUpperCase() + " PAYROLL";
+        }
+
         // ── 1. Header ────────────────────────────────────────────────────────
-        doc.add(buildHeader(displayMonth));
+        doc.add(buildHeader(companyName, displayMonth));
         doc.add(Chunk.NEWLINE);
 
         // ── 2. Employee info ─────────────────────────────────────────────────
@@ -128,7 +137,7 @@ public class PayslipServiceImpl implements PayslipService {
 
     // ── Header ───────────────────────────────────────────────────────────────
 
-    private PdfPTable buildHeader(String displayMonth) throws DocumentException {
+    private PdfPTable buildHeader(String companyNameText, String displayMonth) throws DocumentException {
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
         table.setWidths(new float[]{2f, 1f});
@@ -139,7 +148,7 @@ public class PayslipServiceImpl implements PayslipService {
         left.setBorder(Rectangle.NO_BORDER);
         left.setPadding(16);
 
-        Paragraph companyName = new Paragraph("SRMCEM PAYROLL", FONT_COMPANY);
+        Paragraph companyName = new Paragraph(companyNameText, FONT_COMPANY);
         companyName.setSpacingAfter(4);
         left.addElement(companyName);
         left.addElement(new Paragraph("Human Resources Department", FONT_TITLE));

@@ -18,9 +18,9 @@ public class PdfReportExporter {
     private static final Font DATA_FONT = FontFactory.getFont(FontFactory.HELVETICA, 10);
     private static final String GENERATED_FORMAT = "dd-MM-yyyy HH:mm:ss";
 
-    public static byte[] exportEmployees(List<EmployeeResponse> employees) {
+    public static byte[] exportEmployees(List<EmployeeResponse> employees, String companyName) {
         return generatePdf("Employee Report", new String[]{"ID", "First Name", "Last Name", "Email", "Department", "Role", "Status"},
-                employees, (emp, table) -> {
+                employees, companyName, (emp, table) -> {
                     addCell(table, String.valueOf(emp.getEmployeeId()));
                     addCell(table, emp.getFirstName());
                     addCell(table, emp.getLastName());
@@ -31,9 +31,9 @@ public class PdfReportExporter {
                 });
     }
 
-    public static byte[] exportAttendance(List<AttendanceResponse> attendanceList) {
+    public static byte[] exportAttendance(List<AttendanceResponse> attendanceList, String companyName) {
         return generatePdf("Attendance Report", new String[]{"ID", "Employee", "Date", "Check-in", "Check-out", "Hours", "Status"},
-                attendanceList, (att, table) -> {
+                attendanceList, companyName, (att, table) -> {
                     addCell(table, String.valueOf(att.getAttendanceId()));
                     addCell(table, att.getEmployeeName());
                     addCell(table, att.getDate());
@@ -44,9 +44,9 @@ public class PdfReportExporter {
                 });
     }
 
-    public static byte[] exportLeaves(List<LeaveResponse> leaves) {
+    public static byte[] exportLeaves(List<LeaveResponse> leaves, String companyName) {
         return generatePdf("Leave Requests Report", new String[]{"ID", "Employee", "Type", "Start", "End", "Days", "Status"},
-                leaves, (leave, table) -> {
+                leaves, companyName, (leave, table) -> {
                     addCell(table, String.valueOf(leave.getLeaveId()));
                     addCell(table, leave.getEmployeeName());
                     addCell(table, leave.getLeaveType().name());
@@ -57,9 +57,9 @@ public class PdfReportExporter {
                 });
     }
 
-    public static byte[] exportPayroll(List<PayrollResponse> payrollRecords) {
+    public static byte[] exportPayroll(List<PayrollResponse> payrollRecords, String companyName) {
         return generatePdf("Payroll Report", new String[]{"ID", "Employee", "Month", "Basic", "Gross", "Net"},
-                payrollRecords, (payroll, table) -> {
+                payrollRecords, companyName, (payroll, table) -> {
                     addCell(table, String.valueOf(payroll.getPayrollId()));
                     addCell(table, payroll.getEmployeeName());
                     addCell(table, payroll.getPayrollMonth());
@@ -69,9 +69,9 @@ public class PdfReportExporter {
                 });
     }
 
-    public static byte[] exportDepartments(List<DepartmentResponse> departments) {
+    public static byte[] exportDepartments(List<DepartmentResponse> departments, String companyName) {
         return generatePdf("Departments Report", new String[]{"ID", "Department Name", "Description"},
-                departments, (dept, table) -> {
+                departments, companyName, (dept, table) -> {
                     addCell(table, String.valueOf(dept.getDepartmentId()));
                     addCell(table, dept.getDepartmentName());
                     addCell(table, dept.getDescription() != null ? dept.getDescription() : "");
@@ -84,14 +84,14 @@ public class PdfReportExporter {
         void mapRow(T item, PdfPTable table);
     }
 
-    private static <T> byte[] generatePdf(String title, String[] headers, List<T> data, DataRowMapper<T> rowMapper) {
+    private static <T> byte[] generatePdf(String title, String[] headers, List<T> data, String companyName, DataRowMapper<T> rowMapper) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.A4.rotate()); // Landscape for wide tables
             PdfWriter.getInstance(document, out);
             document.open();
 
             // Title
-            Paragraph titlePara = new Paragraph("SRMCEM Payroll System - " + title, TITLE_FONT);
+            Paragraph titlePara = new Paragraph(companyName + " - " + title, TITLE_FONT);
             titlePara.setAlignment(Element.ALIGN_CENTER);
             titlePara.setSpacingAfter(10);
             document.add(titlePara);
