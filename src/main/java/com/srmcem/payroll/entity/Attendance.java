@@ -61,7 +61,7 @@ public class Attendance {
      * Total working hours for the day, computed at mark/update time.
      * Stored as a decimal (e.g., 8.50 = 8 h 30 min).
      */
-    @Column(name = "working_hours", precision = 4, scale = 2)
+    @Column(name = "working_hours")
     private Double workingHours;
 
     /**
