@@ -40,6 +40,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/leaves")
 @RequiredArgsConstructor
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Leave Module", description = "Endpoints for leave requests management")
 public class LeaveController {
 
     private final LeaveService leaveService;
@@ -49,6 +50,11 @@ public class LeaveController {
     // -----------------------------------------------------------------------
 
     @PostMapping
+    @io.swagger.v3.oas.annotations.Operation(summary = "Apply for Leave", description = "Applies for a new leave request. Throws BadRequestException if dates overlap with existing leaves.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Leave applied successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Overlapping leave or invalid dates range")
+    })
     public ResponseEntity<ApiResponse<LeaveResponse>> applyLeave(
             @Valid @RequestBody LeaveApplyRequest request) {
 
@@ -69,6 +75,12 @@ public class LeaveController {
      * Optionally include {@code adminRemarks}.
      */
     @PatchMapping("/{id}/status")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Update Leave Status", description = "Approves or Rejects a PENDING leave request.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Leave status updated successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Request is already processed or target status is PENDING"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Leave request not found")
+    })
     public ResponseEntity<ApiResponse<LeaveResponse>> updateLeaveStatus(
             @PathVariable Long id,
             @Valid @RequestBody LeaveStatusUpdateRequest request) {
@@ -85,6 +97,11 @@ public class LeaveController {
     // -----------------------------------------------------------------------
 
     @GetMapping("/{id}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Leave Request by ID", description = "Fetches a single leave request details.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Leave request fetched successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Leave request not found")
+    })
     public ResponseEntity<ApiResponse<LeaveResponse>> getLeaveById(@PathVariable Long id) {
         LeaveResponse response = leaveService.getLeaveById(id);
         return ResponseEntity.ok(
@@ -102,6 +119,11 @@ public class LeaveController {
      * @param status     optional filter: {@code PENDING}, {@code APPROVED}, or {@code REJECTED}
      */
     @GetMapping("/employee/{employeeId}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Leave History by Employee", description = "Returns full leave history for the employee, optionally filtered by status.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Leave history fetched successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Employee not found")
+    })
     public ResponseEntity<ApiResponse<List<LeaveResponse>>> getLeaveHistoryByEmployee(
             @PathVariable Long employeeId,
             @RequestParam(required = false) LeaveStatus status) {
@@ -116,6 +138,8 @@ public class LeaveController {
     // -----------------------------------------------------------------------
 
     @GetMapping
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get All Leave Requests", description = "Lists all leave requests (for administrators).")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "All leave requests fetched successfully")
     public ResponseEntity<ApiResponse<List<LeaveResponse>>> getAllLeaveRequests() {
         List<LeaveResponse> records = leaveService.getAllLeaveRequests();
         return ResponseEntity.ok(
@@ -127,6 +151,8 @@ public class LeaveController {
     // -----------------------------------------------------------------------
 
     @GetMapping("/pending")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Pending Leave Requests", description = "Lists all PENDING leave requests (action queue for admin).")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pending leave requests fetched successfully")
     public ResponseEntity<ApiResponse<List<LeaveResponse>>> getPendingLeaveRequests() {
         List<LeaveResponse> records = leaveService.getPendingLeaveRequests();
         return ResponseEntity.ok(
@@ -134,6 +160,8 @@ public class LeaveController {
     }
 
     @GetMapping("/paginated")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Paginated Search for Leaves", description = "Search leave requests with pagination and sorting.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Paginated leave requests fetched successfully")
     public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<LeaveResponse>>> getLeavesPaginated(
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,

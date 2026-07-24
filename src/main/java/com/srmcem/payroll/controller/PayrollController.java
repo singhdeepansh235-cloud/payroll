@@ -40,6 +40,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/payroll")
 @RequiredArgsConstructor
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Payroll Module", description = "Endpoints for generating and viewing employee payroll records")
 public class PayrollController {
 
     private final PayrollService  payrollService;
@@ -57,6 +58,11 @@ public class PayrollController {
      * {@code basicSalary} defaults to the employee's stored salary when omitted.
      */
     @PostMapping
+    @io.swagger.v3.oas.annotations.Operation(summary = "Generate Payroll Record", description = "Generates a monthly payroll record for an employee, applying earnings/deductions formula. E-mail payslip is sent automatically.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Payroll generated successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Payroll already generated for this employee and period, or validation error")
+    })
     public ResponseEntity<ApiResponse<PayrollResponse>> generatePayroll(
             @Valid @RequestBody PayrollGenerateRequest request) {
 
@@ -71,6 +77,11 @@ public class PayrollController {
     // -----------------------------------------------------------------------
 
     @GetMapping("/{id}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Payroll Record by ID", description = "Fetches details of a single payroll record.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Payroll record fetched successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Payroll record not found")
+    })
     public ResponseEntity<ApiResponse<PayrollResponse>> getPayrollById(
             @PathVariable Long id) {
 
@@ -84,6 +95,11 @@ public class PayrollController {
     // -----------------------------------------------------------------------
 
     @GetMapping("/employee/{employeeId}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Payroll History by Employee", description = "Returns full history of payroll records for the employee.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Payroll history fetched successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Employee not found")
+    })
     public ResponseEntity<ApiResponse<List<PayrollResponse>>> getPayrollHistoryByEmployee(
             @PathVariable Long employeeId) {
 
@@ -102,6 +118,8 @@ public class PayrollController {
      * @param period month in {@code "MMMM-yyyy"} format, e.g. {@code "July-2026"}
      */
     @GetMapping("/month")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get Payroll Records for a Month", description = "Returns all employee payroll records generated for the specified month (MMMM-yyyy).")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Payroll records fetched successfully")
     public ResponseEntity<ApiResponse<List<PayrollResponse>>> getPayrollByMonth(
             @RequestParam String period) {
 
@@ -115,6 +133,8 @@ public class PayrollController {
     // -----------------------------------------------------------------------
 
     @GetMapping
+    @io.swagger.v3.oas.annotations.Operation(summary = "Get All Payroll Records", description = "Lists all payroll records.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "All payroll records fetched successfully")
     public ResponseEntity<ApiResponse<List<PayrollResponse>>> getAllPayrollRecords() {
         List<PayrollResponse> records = payrollService.getAllPayrollRecords();
         return ResponseEntity.ok(
@@ -135,6 +155,11 @@ public class PayrollController {
      * @param id the {@code payrollId} of the target {@link com.srmcem.payroll.entity.PayrollRecord}
      */
     @GetMapping(value = "/{id}/payslip", produces = MediaType.APPLICATION_PDF_VALUE)
+    @io.swagger.v3.oas.annotations.Operation(summary = "Download Payslip PDF", description = "Generates and downloads a PDF payslip for the specified payroll record.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Payslip PDF generated successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Payroll record not found")
+    })
     public ResponseEntity<byte[]> downloadPayslip(@PathVariable Long id) {
         byte[] pdfBytes = payslipService.generatePayslip(id);
 
@@ -150,6 +175,8 @@ public class PayrollController {
     }
 
     @GetMapping("/paginated")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Paginated Search for Payroll Records", description = "Search payroll records with pagination and sorting.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Paginated payroll records fetched successfully")
     public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<PayrollResponse>>> getPayrollPaginated(
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,

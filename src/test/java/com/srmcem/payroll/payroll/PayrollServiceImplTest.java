@@ -44,6 +44,15 @@ class PayrollServiceImplTest {
     @Mock
     private EmployeeRepository employeeRepository;
 
+    @Mock
+    private com.srmcem.payroll.mail.MailService mailService;
+
+    @Mock
+    private com.srmcem.payroll.service.PayslipService payslipService;
+
+    @Mock
+    private com.srmcem.payroll.service.AuditLogService auditLogService;
+
     @InjectMocks
     private PayrollServiceImpl payrollService;
 
