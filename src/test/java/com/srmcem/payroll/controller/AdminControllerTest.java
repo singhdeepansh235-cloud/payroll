@@ -85,8 +85,11 @@ class AdminControllerTest {
 
         doNothing().when(adminService).changePassword(eq("admin"), any(ChangePasswordRequest.class));
 
+        org.springframework.security.core.Authentication principal = 
+            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("admin", null, java.util.Collections.emptyList());
+
         mockMvc.perform(post("/api/auth/change-password")
-                        .principal(() -> "admin")
+                        .principal(principal)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

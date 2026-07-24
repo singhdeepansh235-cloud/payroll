@@ -134,7 +134,7 @@ class LeaveServiceTest {
 
         assertThatThrownBy(() -> leaveService.applyLeave(applyRequest))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("overlapping leave");
+                .hasMessageContaining("already exists within the requested date range");
 
         verify(leaveRequestRepository, never()).save(any());
     }
