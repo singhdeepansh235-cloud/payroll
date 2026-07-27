@@ -1,22 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { FiCheck, FiX, FiPlus, FiCalendar, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import Modal from '../components/Modal';
+import { FiCheck, FiX, FiPlus } from 'react-icons/fi';
 
-const Modal = ({ open, onClose, title, children }) => {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-[#151f32] border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
-          <h3 className="text-lg font-bold text-slate-100">{title}</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-slate-200"><FiX /></button>
-        </div>
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
-  );
-};
+const statusMap = { PENDING: 'badge-amber', APPROVED: 'badge-green', REJECTED: 'badge-red' };
 
 const Leaves = () => {
   const [leaves, setLeaves] = useState([]);
@@ -25,189 +13,137 @@ const Leaves = () => {
   const [showApply, setShowApply] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-
-  const [form, setForm] = useState({
-    employeeId: '', leaveType: 'SICK', startDate: '', endDate: '', reason: '',
-  });
+  const [form, setForm] = useState({ employeeId: '', leaveType: 'SICK', startDate: '', endDate: '', reason: '' });
 
   const fetchLeaves = async () => {
     setLoading(true);
     try {
-      let endpoint = '/leaves';
-      if (tab === 'PENDING') endpoint = '/leaves/pending';
-      else if (tab === 'ALL') endpoint = '/leaves';
-      const response = await api.get(endpoint);
-      if (response.data.success) setLeaves(response.data.data);
-    } catch (err) {
-      toast.error('Failed to load leave requests.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchEmployees = async () => {
-    try {
-      const res = await api.get('/employees');
-      if (res.data.success) setEmployees(res.data.data);
-    } catch (err) { /* silent */ }
+      const ep = tab === 'PENDING' ? '/leaves/pending' : '/leaves';
+      const r = await api.get(ep);
+      if (r.data.success) setLeaves(r.data.data);
+    } catch { toast.error('Failed to load leaves.'); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { fetchLeaves(); }, [tab]);
-  useEffect(() => { fetchEmployees(); }, []);
+  useEffect(() => { api.get('/employees').then(r => { if (r.data.success) setEmployees(r.data.data); }).catch(() => {}); }, []);
 
-  const handleUpdate = async (id, status) => {
+  const handleApproval = async (id, status) => {
     try {
       await api.patch(`/leaves/${id}/status`, { status, adminRemarks: 'Processed via admin dashboard.' });
-      toast.success(`Leave request ${status.toLowerCase()} successfully!`);
+      toast.success(`Leave ${status.toLowerCase()} successfully.`);
       fetchLeaves();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update leave status.');
-    }
+    } catch (err) { toast.error(err.response?.data?.message || 'Action failed.'); }
   };
 
-  const handleApply = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const handleApply = async e => {
+    e.preventDefault(); setSubmitting(true);
     try {
       await api.post('/leaves', form);
-      toast.success('Leave request submitted successfully!');
+      toast.success('Leave request submitted.');
       setShowApply(false);
       setForm({ employeeId: '', leaveType: 'SICK', startDate: '', endDate: '', reason: '' });
       fetchLeaves();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to apply leave.');
-    } finally {
-      setSubmitting(false);
-    }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to apply leave.'); }
+    finally { setSubmitting(false); }
   };
 
-  const statusBadge = (status) => {
-    const map = {
-      PENDING: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-      APPROVED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      REJECTED: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-    };
-    return map[status] || map.PENDING;
-  };
-
-  const tabs = [
-    { key: 'PENDING', label: 'Pending' },
-    { key: 'ALL', label: 'All Requests' },
-  ];
+  const tabs = [{ key: 'PENDING', label: 'Pending Approvals' }, { key: 'ALL', label: 'All Requests' }];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-100">Leave Management</h2>
-          <p className="text-slate-400 text-sm mt-1">Review and manage employee leave requests.</p>
+          <h2 className="page-title">Leave Management</h2>
+          <p className="page-subtitle">Review and manage employee leave applications.</p>
         </div>
-        <button onClick={() => setShowApply(true)} className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-sky-500/20 active:scale-[0.98] text-sm">
-          <FiPlus /><span>Apply Leave</span>
+        <button onClick={() => setShowApply(true)} className="btn-primary space-x-1.5">
+          <FiPlus className="text-sm" /><span>Apply Leave</span>
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-[#1e293b]/40 p-1 rounded-xl w-fit border border-slate-700/30">
-        {tabs.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.key ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-slate-200'}`}>
+      <div className="flex space-x-1 bg-white border border-slate-200 rounded-lg p-1 w-fit shadow-sm">
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${tab === t.key ? 'bg-[#2d4a8a] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
             {t.label}
           </button>
         ))}
       </div>
 
       {/* Table */}
-      <div className="bg-[#1e293b]/40 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-md">
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-700/50 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-[#0f172a]/30">
-                <th className="px-5 py-4">Employee</th>
-                <th className="px-5 py-4">Type</th>
-                <th className="px-5 py-4">Duration</th>
-                <th className="px-5 py-4">Days</th>
-                <th className="px-5 py-4">Reason</th>
-                <th className="px-5 py-4">Status</th>
-                {tab === 'PENDING' && <th className="px-5 py-4 text-right">Actions</th>}
+          <table className="w-full border-collapse">
+            <thead className="border-b border-slate-100">
+              <tr>
+                {['Employee', 'Type', 'Duration', 'Days', 'Reason', 'Status', ...(tab === 'PENDING' ? ['Actions'] : [])].map(h => (
+                  <th key={h} className="table-header">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/30 text-sm text-slate-300">
+            <tbody className="divide-y divide-slate-50">
               {loading ? (
-                <tr><td colSpan="7" className="text-center py-12 text-slate-500">Loading...</td></tr>
+                <tr><td colSpan={7} className="py-12 text-center text-slate-400 text-sm">Loading...</td></tr>
               ) : leaves.length === 0 ? (
-                <tr><td colSpan="7" className="text-center py-12 text-slate-500">No leave requests found.</td></tr>
-              ) : (
-                leaves.map((leave) => (
-                  <tr key={leave.leaveId} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-5 py-4 font-semibold text-slate-200">{leave.employeeName}</td>
-                    <td className="px-5 py-4">
-                      <span className="px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-full text-xs font-medium">{leave.leaveType}</span>
+                <tr><td colSpan={7} className="py-12 text-center text-slate-400 text-sm">No leave requests found.</td></tr>
+              ) : leaves.map(l => (
+                <tr key={l.leaveId} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="table-cell font-medium text-slate-800">{l.employeeName}</td>
+                  <td className="table-cell"><span className="badge-blue">{l.leaveType}</span></td>
+                  <td className="table-cell text-slate-500 text-xs whitespace-nowrap">{l.startDate} → {l.endDate}</td>
+                  <td className="table-cell font-medium text-slate-700">{l.totalDays}</td>
+                  <td className="table-cell text-slate-500 max-w-[180px] truncate text-xs">{l.reason || '—'}</td>
+                  <td className="table-cell"><span className={statusMap[l.status] || 'badge-slate'}>{l.status}</span></td>
+                  {tab === 'PENDING' && (
+                    <td className="table-cell">
+                      <div className="flex items-center space-x-1.5">
+                        <button onClick={() => handleApproval(l.leaveId, 'APPROVED')}
+                          className="flex items-center space-x-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors">
+                          <FiCheck className="text-xs" /><span>Approve</span>
+                        </button>
+                        <button onClick={() => handleApproval(l.leaveId, 'REJECTED')}
+                          className="flex items-center space-x-1 px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors">
+                          <FiX className="text-xs" /><span>Reject</span>
+                        </button>
+                      </div>
                     </td>
-                    <td className="px-5 py-4 text-xs text-slate-400">{leave.startDate} → {leave.endDate}</td>
-                    <td className="px-5 py-4 font-medium">{leave.totalDays}</td>
-                    <td className="px-5 py-4 text-slate-400 max-w-[200px] truncate">{leave.reason || '-'}</td>
-                    <td className="px-5 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusBadge(leave.status)}`}>{leave.status}</span>
-                    </td>
-                    {tab === 'PENDING' && (
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button onClick={() => handleUpdate(leave.leaveId, 'APPROVED')} className="flex items-center space-x-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-colors">
-                            <FiCheck className="text-xs" /><span>Approve</span>
-                          </button>
-                          <button onClick={() => handleUpdate(leave.leaveId, 'REJECTED')} className="flex items-center space-x-1 px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-medium transition-colors">
-                            <FiX className="text-xs" /><span>Reject</span>
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
+                  )}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Apply Leave Modal */}
-      <Modal open={showApply} onClose={() => setShowApply(false)} title="Apply for Leave">
+      {/* Apply Modal */}
+      <Modal open={showApply} onClose={() => setShowApply(false)} title="Apply for Leave" size="md">
         <form onSubmit={handleApply} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Employee</label>
-            <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} required className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 outline-none transition-all text-sm">
-              <option value="">Select Employee</option>
+            <label className="form-label">Employee</label>
+            <select value={form.employeeId} onChange={e => setForm({ ...form, employeeId: e.target.value })} required className="form-input">
+              <option value="">Select employee</option>
               {employees.map(emp => <option key={emp.employeeId} value={emp.employeeId}>{emp.firstName} {emp.lastName}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Leave Type</label>
-            <select value={form.leaveType} onChange={(e) => setForm({ ...form, leaveType: e.target.value })} className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 outline-none transition-all text-sm">
-              <option value="SICK">Sick Leave</option>
-              <option value="CASUAL">Casual Leave</option>
-              <option value="EARNED">Earned Leave</option>
-              <option value="MATERNITY">Maternity Leave</option>
-              <option value="UNPAID">Unpaid Leave</option>
+            <label className="form-label">Leave Type</label>
+            <select value={form.leaveType} onChange={e => setForm({ ...form, leaveType: e.target.value })} className="form-input">
+              {['SICK', 'CASUAL', 'EARNED', 'MATERNITY', 'UNPAID'].map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Start Date</label>
-              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 outline-none transition-all text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">End Date</label>
-              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} required className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 outline-none transition-all text-sm" />
-            </div>
+            <div><label className="form-label">Start Date</label><input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} required className="form-input" /></div>
+            <div><label className="form-label">End Date</label><input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} required className="form-input" /></div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Reason</label>
-            <textarea value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 placeholder-slate-500 outline-none transition-all text-sm h-20 resize-none" placeholder="Reason for leave..." />
+            <label className="form-label">Reason</label>
+            <textarea value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} className="form-input h-20 resize-none" placeholder="Reason for leave..." />
           </div>
-          <div className="flex justify-end space-x-3 pt-2">
-            <button type="button" onClick={() => setShowApply(false)} className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors">Cancel</button>
-            <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-semibold rounded-xl text-sm transition-all active:scale-[0.98] disabled:opacity-50">
-              {submitting ? 'Submitting...' : 'Submit Leave'}
-            </button>
+          <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+            <button type="button" onClick={() => setShowApply(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" disabled={submitting} className="btn-primary">{submitting ? 'Submitting...' : 'Submit Leave'}</button>
           </div>
         </form>
       </Modal>

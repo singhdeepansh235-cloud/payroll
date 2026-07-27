@@ -1,202 +1,136 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { FiCalendar, FiSearch, FiPlus, FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import Modal from '../components/Modal';
+import { FiCalendar, FiPlus, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
-const Modal = ({ open, onClose, title, children }) => {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-[#151f32] border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
-          <h3 className="text-lg font-bold text-slate-100">{title}</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-slate-200"><FiX /></button>
-        </div>
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
-  );
+const statusMap = {
+  PRESENT:  'badge-green',
+  ABSENT:   'badge-red',
+  HALF_DAY: 'badge-amber',
+  ON_LEAVE: 'badge-blue',
 };
 
 const Attendance = () => {
   const [attendance, setAttendance] = useState([]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(true);
-  const [showMarkForm, setShowMarkForm] = useState(false);
+  const [showMark, setShowMark] = useState(false);
   const [employees, setEmployees] = useState([]);
-
-  // Mark attendance form
-  const [markForm, setMarkForm] = useState({
-    employeeId: '',
-    date: new Date().toISOString().split('T')[0],
-    checkIn: '09:00',
-    checkOut: '18:00',
-    attendanceStatus: 'PRESENT',
-  });
+  const [markForm, setMarkForm] = useState({ employeeId: '', date: new Date().toISOString().split('T')[0], checkIn: '09:00', checkOut: '18:00', attendanceStatus: 'PRESENT' });
   const [submitting, setSubmitting] = useState(false);
 
   const fetchAttendance = async () => {
     setLoading(true);
-    try {
-      const response = await api.get('/attendance/date', { params: { date } });
-      if (response.data.success) setAttendance(response.data.data);
-    } catch (err) {
-      toast.error('Failed to load attendance records.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchEmployees = async () => {
-    try {
-      const res = await api.get('/employees');
-      if (res.data.success) setEmployees(res.data.data);
-    } catch (err) { /* silent */ }
+    try { const r = await api.get('/attendance/date', { params: { date } }); if (r.data.success) setAttendance(r.data.data); }
+    catch { toast.error('Failed to load attendance.'); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAttendance(); }, [date]);
-  useEffect(() => { fetchEmployees(); }, []);
+  useEffect(() => { api.get('/employees').then(r => { if (r.data.success) setEmployees(r.data.data); }).catch(() => {}); }, []);
 
-  const handleMarkAttendance = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await api.post('/attendance', markForm);
-      toast.success('Attendance marked successfully!');
-      setShowMarkForm(false);
-      if (markForm.date === date) fetchAttendance();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to mark attendance.');
-    } finally {
-      setSubmitting(false);
-    }
+  const changeDate = d => { const nd = new Date(date); nd.setDate(nd.getDate() + d); setDate(nd.toISOString().split('T')[0]); };
+
+  const handleMark = async e => {
+    e.preventDefault(); setSubmitting(true);
+    try { await api.post('/attendance', markForm); toast.success('Attendance recorded.'); setShowMark(false); if (markForm.date === date) fetchAttendance(); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed.'); }
+    finally { setSubmitting(false); }
   };
 
-  const statusBadge = (status) => {
-    const map = {
-      PRESENT: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      ABSENT: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-      HALF_DAY: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-      ON_LEAVE: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-    };
-    return map[status] || map.PRESENT;
-  };
-
-  const changeDate = (offset) => {
-    const d = new Date(date);
-    d.setDate(d.getDate() + offset);
-    setDate(d.toISOString().split('T')[0]);
-  };
+  const present  = attendance.filter(a => a.attendanceStatus === 'PRESENT').length;
+  const absent   = attendance.filter(a => a.attendanceStatus === 'ABSENT').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-100">Attendance</h2>
-          <p className="text-slate-400 text-sm mt-1">Daily attendance records for all employees.</p>
+          <h2 className="page-title">Attendance</h2>
+          <p className="page-subtitle">Daily attendance logs for all employees.</p>
         </div>
-        <button onClick={() => { setMarkForm({ ...markForm, date }); setShowMarkForm(true); }} className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-sky-500/20 active:scale-[0.98] text-sm">
-          <FiPlus /><span>Mark Attendance</span>
+        <button onClick={() => { setMarkForm({ ...markForm, date }); setShowMark(true); }} className="btn-primary space-x-1.5">
+          <FiPlus className="text-sm" /><span>Mark Attendance</span>
         </button>
       </div>
 
-      {/* Date Selector */}
+      {/* Date Navigator */}
       <div className="flex items-center space-x-3">
-        <button onClick={() => changeDate(-1)} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors"><FiChevronLeft /></button>
-        <div className="flex items-center space-x-2 bg-[#1e293b] border border-slate-700 px-4 py-2.5 rounded-xl">
-          <FiCalendar className="text-sky-400" />
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-transparent border-none outline-none text-slate-200 text-sm cursor-pointer" />
+        <button onClick={() => changeDate(-1)} className="btn-secondary !px-2.5 !py-2.5"><FiChevronLeft className="text-sm" /></button>
+        <div className="flex items-center space-x-2 bg-white border border-slate-200 rounded-lg px-4 py-2.5 shadow-sm">
+          <FiCalendar className="text-slate-400 text-sm" />
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="text-sm font-medium text-slate-700 outline-none bg-transparent cursor-pointer" />
         </div>
-        <button onClick={() => changeDate(1)} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors"><FiChevronRight /></button>
-        <span className="text-xs text-slate-400 ml-2">{new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        <button onClick={() => changeDate(1)} className="btn-secondary !px-2.5 !py-2.5"><FiChevronRight className="text-sm" /></button>
+        <span className="text-sm text-slate-500">{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
       </div>
+
+      {/* Summary */}
+      {!loading && attendance.length > 0 && (
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm">
+            <span className="font-semibold text-slate-700">{attendance.length}</span><span className="text-slate-400">Total</span>
+          </div>
+          <div className="flex items-center space-x-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
+            <span className="font-semibold text-emerald-700">{present}</span><span className="text-emerald-600">Present</span>
+          </div>
+          <div className="flex items-center space-x-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm">
+            <span className="font-semibold text-red-700">{absent}</span><span className="text-red-600">Absent</span>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
-      <div className="bg-[#1e293b]/40 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-md">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-700/50 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-[#0f172a]/30">
-                <th className="px-6 py-4">Employee</th>
-                <th className="px-6 py-4">Check In</th>
-                <th className="px-6 py-4">Check Out</th>
-                <th className="px-6 py-4">Status</th>
+      <div className="card overflow-hidden">
+        <table className="w-full border-collapse">
+          <thead className="border-b border-slate-100">
+            <tr>
+              {['Employee', 'Check In', 'Check Out', 'Status'].map(h => <th key={h} className="table-header">{h}</th>)}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {loading ? (
+              <tr><td colSpan={4} className="py-12 text-center text-slate-400 text-sm">Loading...</td></tr>
+            ) : attendance.length === 0 ? (
+              <tr><td colSpan={4} className="py-12 text-center text-slate-400 text-sm">No records for this date.</td></tr>
+            ) : attendance.map(att => (
+              <tr key={att.attendanceId} className="hover:bg-slate-50/60 transition-colors">
+                <td className="table-cell font-medium text-slate-800">{att.employeeName}</td>
+                <td className="table-cell text-slate-500 font-mono text-xs">{att.checkIn || '—'}</td>
+                <td className="table-cell text-slate-500 font-mono text-xs">{att.checkOut || '—'}</td>
+                <td className="table-cell"><span className={statusMap[att.attendanceStatus] || 'badge-slate'}>{att.attendanceStatus}</span></td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/30 text-sm text-slate-300">
-              {loading ? (
-                <tr><td colSpan="4" className="text-center py-12 text-slate-500">
-                  <svg className="animate-spin h-6 w-6 mx-auto text-sky-400 mb-2" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                  Loading records...
-                </td></tr>
-              ) : attendance.length === 0 ? (
-                <tr><td colSpan="4" className="text-center py-12 text-slate-500">No attendance records for this date.</td></tr>
-              ) : (
-                attendance.map((att) => (
-                  <tr key={att.attendanceId} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-6 py-4 font-semibold text-slate-200">{att.employeeName}</td>
-                    <td className="px-6 py-4 text-slate-400 font-mono text-xs">{att.checkIn || '--:--'}</td>
-                    <td className="px-6 py-4 text-slate-400 font-mono text-xs">{att.checkOut || '--:--'}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusBadge(att.attendanceStatus)}`}>
-                        {att.attendanceStatus}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Summary bar */}
-        {!loading && attendance.length > 0 && (
-          <div className="px-6 py-3 bg-[#0f172a]/20 border-t border-slate-700/50 flex items-center space-x-6 text-xs text-slate-400">
-            <span>Total: <strong className="text-slate-200">{attendance.length}</strong></span>
-            <span>Present: <strong className="text-emerald-400">{attendance.filter(a => a.attendanceStatus === 'PRESENT').length}</strong></span>
-            <span>Absent: <strong className="text-rose-400">{attendance.filter(a => a.attendanceStatus === 'ABSENT').length}</strong></span>
-          </div>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Mark Attendance Modal */}
-      <Modal open={showMarkForm} onClose={() => setShowMarkForm(false)} title="Mark Attendance">
-        <form onSubmit={handleMarkAttendance} className="space-y-4">
+      <Modal open={showMark} onClose={() => setShowMark(false)} title="Mark Attendance" size="md">
+        <form onSubmit={handleMark} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Employee</label>
-            <select value={markForm.employeeId} onChange={(e) => setMarkForm({ ...markForm, employeeId: e.target.value })} required className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 outline-none transition-all text-sm">
-              <option value="">Select Employee</option>
+            <label className="form-label">Employee</label>
+            <select value={markForm.employeeId} onChange={e => setMarkForm({ ...markForm, employeeId: e.target.value })} required className="form-input">
+              <option value="">Select employee</option>
               {employees.map(emp => <option key={emp.employeeId} value={emp.employeeId}>{emp.firstName} {emp.lastName}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Date</label>
-            <input type="date" value={markForm.date} onChange={(e) => setMarkForm({ ...markForm, date: e.target.value })} required className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 outline-none transition-all text-sm" />
+            <label className="form-label">Date</label>
+            <input type="date" value={markForm.date} onChange={e => setMarkForm({ ...markForm, date: e.target.value })} required className="form-input" />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Check In</label>
-              <input type="time" value={markForm.checkIn} onChange={(e) => setMarkForm({ ...markForm, checkIn: e.target.value })} className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 outline-none transition-all text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Check Out</label>
-              <input type="time" value={markForm.checkOut} onChange={(e) => setMarkForm({ ...markForm, checkOut: e.target.value })} className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 outline-none transition-all text-sm" />
-            </div>
+            <div><label className="form-label">Check In</label><input type="time" value={markForm.checkIn} onChange={e => setMarkForm({ ...markForm, checkIn: e.target.value })} className="form-input" /></div>
+            <div><label className="form-label">Check Out</label><input type="time" value={markForm.checkOut} onChange={e => setMarkForm({ ...markForm, checkOut: e.target.value })} className="form-input" /></div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Status</label>
-            <select value={markForm.attendanceStatus} onChange={(e) => setMarkForm({ ...markForm, attendanceStatus: e.target.value })} className="w-full px-4 py-2.5 bg-[#0d1523] border border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl text-slate-200 outline-none transition-all text-sm">
-              <option value="PRESENT">Present</option>
-              <option value="ABSENT">Absent</option>
-              <option value="HALF_DAY">Half Day</option>
-              <option value="ON_LEAVE">On Leave</option>
+            <label className="form-label">Status</label>
+            <select value={markForm.attendanceStatus} onChange={e => setMarkForm({ ...markForm, attendanceStatus: e.target.value })} className="form-input">
+              {['PRESENT', 'ABSENT', 'HALF_DAY', 'ON_LEAVE'].map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
             </select>
           </div>
-          <div className="flex justify-end space-x-3 pt-2">
-            <button type="button" onClick={() => setShowMarkForm(false)} className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors">Cancel</button>
-            <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-semibold rounded-xl text-sm transition-all active:scale-[0.98] disabled:opacity-50">
-              {submitting ? 'Saving...' : 'Mark Attendance'}
-            </button>
+          <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+            <button type="button" onClick={() => setShowMark(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" disabled={submitting} className="btn-primary">{submitting ? 'Saving...' : 'Record Attendance'}</button>
           </div>
         </form>
       </Modal>
