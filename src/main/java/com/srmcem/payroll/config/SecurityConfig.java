@@ -109,7 +109,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 // Public: login endpoint
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/login").permitAll()
                 // Public: Swagger / OpenAPI docs
                 .requestMatchers(
                     "/swagger-ui/**",

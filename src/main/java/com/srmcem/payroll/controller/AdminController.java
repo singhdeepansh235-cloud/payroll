@@ -5,11 +5,21 @@ import com.srmcem.payroll.dto.ChangePasswordRequest;
 import com.srmcem.payroll.dto.LoginRequest;
 import com.srmcem.payroll.response.ApiResponse;
 import com.srmcem.payroll.service.AdminService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * REST endpoints for Admin authentication.
@@ -32,6 +42,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
     private final AdminService adminService;
+    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     // -----------------------------------------------------------------------
     // POST /api/auth/login
@@ -51,9 +62,21 @@ public class AdminController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid credentials")
     })
     public ResponseEntity<ApiResponse<AdminResponse>> login(
-            @Valid @RequestBody LoginRequest request) {
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse) {
 
         AdminResponse adminResponse = adminService.login(request);
+
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(request.getUsername(), null,
+                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authenticationToken);
+        SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, httpServletRequest, httpServletResponse);
+
         return ResponseEntity.ok(
                 ApiResponse.success("Login successful.", adminResponse));
     }
